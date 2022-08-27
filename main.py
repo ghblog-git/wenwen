@@ -6,6 +6,7 @@ from datetime import datetime, date
 from zhdate import ZhDate
 import sys
 import os
+import linecache
 
 
 def get_color():
@@ -111,7 +112,7 @@ def get_ciba():
     return note_ch, note_en
 
 
-def send_message(to_user, access_token, city_name, weather, max_temperature, min_temperature, note_ch, note_en):
+def send_message(to_user, access_token, city_name, weather, max_temperature, min_temperature, note_ch, note_en, words):
     url = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}".format(access_token)
     week_list = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
     year = localtime().tm_year
@@ -168,6 +169,10 @@ def send_message(to_user, access_token, city_name, weather, max_temperature, min
             "note_ch": {
                 "value": note_ch,
                 "color": get_color()
+            },
+            "words": {
+                "value": words,
+                "color": get_color()
             }
         }
     }
@@ -177,9 +182,45 @@ def send_message(to_user, access_token, city_name, weather, max_temperature, min
         if birth_day == 0:
             birthday_data = "今天{}生日哦，{}生日快乐呀🌈！".format(value["name"], value["name"])
         else:
-            birthday_data = "距离{}的生日还有{}天呀✌".format(value["name"], birth_day)
+            birthday_data = "距离{}的生日还有{}天呀♥".format(value["name"], birth_day)
         # 将生日数据插入data
         data["data"][key] = {"value": birthday_data, "color": get_color()}
+
+
+    yin = ['多云', '阴', '多云转阴', '小雨', '小雨转多云']
+    if weather in yin:
+        data["data"]["note"] = {"value": '今天是阴天(｡･∀･)ﾉﾞ', "color": get_color()}
+        if int(min_temperature.split("℃")[0]) < 10:
+            data["data"]["note"] = {"value": '今天最低气温小于10℃，宝贝注意保暖呀', "color": get_color()}
+    elif weather == "晴":
+        data["data"]["note"] = {"value": '今天是晴天呀(●ˇ∀ˇ●)✌', "color": get_color()}
+    else:
+        try:
+            data["data"].pop("note")
+        except:
+            pass
+
+    if week == week_list[5]:
+        print('week4')
+        data["data"]['friday'] = {"value": "宝贝明天可以睡懒觉了哦(●ˇ∀ˇ●)", "color": get_color()}
+    elif week == week_list[0] or week_list[6]:
+        data["data"]['friday'] = {"value": "到了周末了呀，宝贝好好放松哦O(∩_∩)O", "color": get_color()}
+    else:
+        t = 6 - today.isoweekday() % 7
+        data["data"]['friday'] = {"value": "距离周末还有" + str(t) + "天,加油呀ε=( o｀ω′)ノ 宝贝", "color": get_color()}
+
+    dayima_pre = [2, 3]
+    dayima = [4, 5, 6]
+    if day in dayima_pre:
+        data["data"]['dayima'] = {"value": "宝贝注意不要吃凉的呀，亲戚快要来啦, 提前准备好暖宝宝呀", "color": get_color()}
+    elif day in dayima:
+        data["data"]['dayima'] = {"value": "抱抱宝贝👶，宝贝受苦啦 好好暖暖肚肚啊", "color": get_color()}
+    else:
+        try:
+            data["data"].pop('dayima')
+        except:
+            pass
+
     headers = {
         'Content-Type': 'application/json',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
@@ -198,7 +239,18 @@ def send_message(to_user, access_token, city_name, weather, max_temperature, min
         print(response)
 
 
+def get_text():
+    txt = open('words.txt', 'rb')
+    data = txt.read().decode('utf-8')
+    txt.close()
+    n = data.count('\n')
+    i = random.randint(1, (n + 1))
+    text = linecache.getline(r'words.txt', i)
+    return text
+
+
 if __name__ == "__main__":
+
     try:
         with open("config.txt", encoding="utf-8") as f:
             config = eval(f.read())
@@ -211,16 +263,17 @@ if __name__ == "__main__":
         os.system("pause")
         sys.exit(1)
 
-    # 获取accessToken
     accessToken = get_access_token()
-    # 接收的用户
+
+    words = get_text()
     users = config["user"]
-    # 传入省份和市获取天气信息
     province, city = config["province"], config["city"]
     weather, max_temperature, min_temperature = get_weather(province, city)
-    # 获取词霸每日金句
     note_ch, note_en = get_ciba()
-    # 公众号推送消息
     for user in users:
-        send_message(user, accessToken, city, weather, max_temperature, min_temperature, note_ch, note_en)
+        send_message(user, accessToken, city, weather, max_temperature, min_temperature, note_ch, note_en, words)
     os.system("pause")
+
+
+
+
