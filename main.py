@@ -187,11 +187,14 @@ def send_message(to_user, access_token, city_name, weather, max_temperature, min
         data["data"][key] = {"value": birthday_data, "color": get_color()}
 
 
-    yin = ['多云', '阴', '多云转阴', '小雨', '小雨转多云']
+    yin = ['多云', '阴', '多云转阴']
+    yu = ['小雨', '小雨转多云', '阴转小雨', '小雨转中雨', '中雨']
     if weather in yin:
         data["data"]["note"] = {"value": '今天是阴天(｡･∀･)ﾉﾞ', "color": get_color()}
         if int(min_temperature.split("℃")[0]) < 10:
             data["data"]["note"] = {"value": '今天最低气温小于10℃，宝贝注意保暖呀', "color": get_color()}
+    elif weather in yu:
+        data["data"]["note"] = {"value": '今天可能有雨，宝贝记得带伞呀(｡･∀･)ﾉﾞ', "color": get_color()}
     elif weather == "晴":
         data["data"]["note"] = {"value": '今天是晴天呀(●ˇ∀ˇ●)✌', "color": get_color()}
     else:
@@ -203,7 +206,9 @@ def send_message(to_user, access_token, city_name, weather, max_temperature, min
     if week == week_list[5]:
         print('week4')
         data["data"]['friday'] = {"value": "宝贝明天可以睡懒觉了哦(●ˇ∀ˇ●)", "color": get_color()}
-    elif week == week_list[0] or week_list[6]:
+    elif week == week_list[0]:
+        data["data"]['friday'] = {"value": "到了周末了呀，宝贝好好放松哦O(∩_∩)O", "color": get_color()}
+    elif week == week_list[6]:
         data["data"]['friday'] = {"value": "到了周末了呀，宝贝好好放松哦O(∩_∩)O", "color": get_color()}
     else:
         t = 6 - today.isoweekday() % 7
